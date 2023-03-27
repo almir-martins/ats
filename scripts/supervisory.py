@@ -1,4 +1,6 @@
+# ===================================================
 # import das bibliotecas
+# ===================================================
 import psycopg2
 import streamlit as st
 import pandas as pd
@@ -6,58 +8,26 @@ import plotly.express as px
 import requests
 import random
 import time
+import threading
 from bs4 import BeautifulSoup
 from datetime import datetime
+from get_data import Data
+
+data = Data()
+
+threading.Thread(target=data.painel_para_bd).start()
 
 
-# Retorna a feature hora e a tabela do site
-def conecta_painel():
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/110.0"
-    }
+def recarrega():
+    df = data.formata_dados_painel()
 
-    url = "https://www.horariodebrasilia.org/"
-    url2 = "https://www.canalrural.com.br/cotacao/soja/"
+    # TODO Configurando o df novamente
+    df.set_index(keys="data", inplace=True, drop=True)
+    df.drop(columns="id", inplace=True)
+    for col in df.columns[:-1]:
+        df[col] = df[col].astype("float")
 
-    hora_site = requests.get(url, headers=headers)
-    soup_hora = BeautifulSoup(hora_site.content, "html.parser")
-    tempo = soup_hora.find("p", id="relogio")
-
-    preco_site = requests.get(url2, headers=headers)
-    soup_preco = BeautifulSoup(preco_site.content, "html.parser")
-
-    tabela = soup_preco.find("tbody")
-
-    # tempo = time.strftime("%H:%M:%S", datetime.now())
-    tempo = datetime.now()
-    # date_str = str(datetime.now())
-    # tempo = datetime.strptime(date_str, "%Y-%m-%d %H:%M:%S.%f")
-
-    return tempo, tabela
-
-
-# Retorna a tabela do site como dataframe
-def le_dados_painel(hora, tbody):
-    colunas = list()
-    linhas = list()
-
-    for tr in tbody.find_all("tr"):
-        td = tr.find_all("td")[0].text
-        colunas.append(td)
-
-    for tr in tbody.find_all("tr"):
-        td = tr.find_all("td")[1].text
-        td = float(td) + random.randint(-50, 50)
-        linhas.append(td)
-
-    colunas.append("CLP")
-    linhas.append("CLP_" + str(random.randint(1, 3)))
-
-    linhas = [linhas]
-
-    dataframe = pd.DataFrame(linhas, columns=colunas, index=[hora])
-
-    return dataframe
+    return df
 
 
 # ===================================================
@@ -68,6 +38,7 @@ st.set_page_config(
     page_icon="✅",
     layout="wide",
 )
+
 
 # Barra lateral
 with st.sidebar:
@@ -80,7 +51,6 @@ with st.sidebar:
         """
     )
 
-
 st.header("ATS Supervisory Control")
 
 # =========================
@@ -88,27 +58,32 @@ st.write("Buscar dados do painel")
 
 # creating a single-element container
 placeholder = st.empty()
+df = pd.DataFrame()
+with st.spinner("Carregando o sistema..."):
+    time.sleep(1.5)
+    st.success("Sistema iniciado!")
 
 # Símbolo e mensagem de "Carregando..."
-with st.spinner("Carregando dados..."):
-    a, b = conecta_painel()
-    df = le_dados_painel(a, b)
-    for i in range(1):
-        time.sleep(1)
-        a, b = conecta_painel()
-        df2 = le_dados_painel(a, b)
-        df = pd.concat([df, df2])
+# with st.spinner("Carregando dados..."):
+# data = Data()
+# df = data.formata_dados_painel()
+
+# # TODO Configurando o df novamente
+# df.set_index(keys="data", inplace=True, drop=True)
+# df.drop(columns="id", inplace=True)
+# for col in df.columns[:-1]:
+#     df[col] = df[col].astype("float")
 
 
 # near real-time / live feed simulation
-for seconds in range(30):
-    a, b = conecta_painel()
-    df2 = le_dados_painel(a, b)
-    df = pd.concat([df, df2])
+for seconds in range(7200):
+    # TODO  pegar as linhas novas do banco e inserir no df
+    df = recarrega()
+    # df = df.tail()
 
     # Apaga os elementos
     with placeholder.container():
-        st.dataframe(data=df)
+        st.dataframe(data=df.tail())
         if "df" not in st.session_state:
             st.session_state["df"] = df
 
@@ -126,7 +101,6 @@ for seconds in range(30):
         col4.metric(df.columns[7], df.iloc[-1, 7], df.iloc[-1, 7] - df.iloc[-2, 7])
 
         st.write("-----------------------------------")
-        st.markdown("<p style='text-align: center;'>Text_content</p>")
         st.markdown("### Gráficos")
         # create two columns for charts
         fig_col1, fig_col2 = st.columns(2)
@@ -135,13 +109,13 @@ for seconds in range(30):
             fig = px.line(
                 data_frame=df,
                 x=df.index,
-                y="Dourados (MS)",
+                y=df.columns[0],
                 labels={
                     "index": "",
-                    "Dourados (MS)": "Valor",
-                    "CLP": "CLPs",
+                    df.columns[0]: "Valor",
+                    "clp": "CLPs",
                 },
-                title="Dados de Dourados/MS",
+                title="Dados da Caldeira",
             )
             st.write(fig)
 
@@ -149,11 +123,11 @@ for seconds in range(30):
             fig2 = px.line(
                 data_frame=df,
                 x=df.index,
-                y="Balsas (MA)",
+                y=df.columns[1],
                 labels={
                     "index": "",
-                    "Balsas (MA)": "Valor",
-                    "CLP": "CLPs",
+                    df.columns[1]: "Valor",
+                    "clp": "CLPs",
                 },
                 title="Dados de Balsas/MA   ",
             )
@@ -163,12 +137,12 @@ for seconds in range(30):
         with fig_col3:
             fig = px.line(
                 data_frame=df,
-                y="Dourados (MS)",
-                color="CLP",
+                y=df.columns[2],
+                color="clp",
                 labels={
                     "index": "",
-                    "Dourados (MS)": "Valor",
-                    "CLP": "CLPs",
+                    df.columns[2]: "Valor",
+                    "clp": "CLPs",
                 },
                 title="Região integrada 1",
             )
@@ -178,14 +152,14 @@ for seconds in range(30):
             fig = px.line(
                 data_frame=df,
                 x=df.index,
-                y="Dourados (MS)",
-                color="CLP",
+                y=df.columns[1],
+                color="clp",
                 markers=True,
                 # text=df.index.time,
                 labels={
                     "index": "",
-                    "Dourados (MS)": "Valor",
-                    "CLP": "CLPs",
+                    df.columns[1]: "Valor",
+                    "clp": "CLPs",
                 },
                 title="Região integrada 2",
             )
