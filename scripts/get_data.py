@@ -202,7 +202,7 @@ class Data:
             df = self.le_dados_painel(a, b)
             # Insere os dados do dataframe no banco de dados
             self.insert_db(df)
-            time.sleep(0.5)
+            time.sleep(1)
 
     # Formata os dados do painel
     def formata_dados_painel(self):

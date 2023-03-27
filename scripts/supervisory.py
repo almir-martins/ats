@@ -76,7 +76,7 @@ with st.spinner("Carregando o sistema..."):
 
 
 # near real-time / live feed simulation
-for seconds in range(7200):
+for seconds in range(50):  # 7200
     # TODO  pegar as linhas novas do banco e inserir no df
     df = recarrega()
     # df = df.tail()
@@ -165,4 +165,4 @@ for seconds in range(7200):
             )
             st.write(fig)
 
-        time.sleep(1)
+        time.sleep(1.5)
