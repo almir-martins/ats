@@ -121,7 +121,7 @@ for seconds in range(50):  # 7200
                     df_grafico.columns[0]: "Valor",
                     "clp": "CLPs",
                 },
-                title="Dados da Caldeira",
+                title="Pressão bar°",
             )
             st.write(fig)
 
@@ -135,7 +135,7 @@ for seconds in range(50):  # 7200
                     df_grafico.columns[1]: "Valor",
                     "clp": "CLPs",
                 },
-                title="Temperatura   ",
+                title="Temperatura C°",
             )
             st.write(fig2)
 
