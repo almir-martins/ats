@@ -195,14 +195,14 @@ class Data:
 
     # Pega os dados do painel e grava no banco de dados
     def painel_para_bd(self):
-        # for i in range(7200):
-        # Conecta no painel e pega os dados
-        a, b = self.conecta_painel()
-        # Converte os dados para formato dataframe
-        df = self.le_dados_painel(a, b)
-        # Insere os dados do dataframe no banco de dados
-        self.insert_db(df)
-        # time.sleep(1)
+        for i in range(60):
+            # Conecta no painel e pega os dados
+            a, b = self.conecta_painel()
+            # Converte os dados para formato dataframe
+            df = self.le_dados_painel(a, b)
+            # Insere os dados do dataframe no banco de dados
+            self.insert_db(df)
+            time.sleep(1)
 
     # Formata os dados do painel
     def formata_dados_painel(self):
@@ -214,3 +214,10 @@ class Data:
         df.data = pd.to_datetime(df.data)
 
         return df
+
+
+if __name__ == "__main__":
+    data = Data()
+    print("Iniciado...")
+    data.painel_para_bd()
+    print("Finalizado!")

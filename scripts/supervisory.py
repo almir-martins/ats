@@ -15,7 +15,11 @@ from get_data import Data
 
 data = Data()
 
-threading.Thread(target=data.painel_para_bd).start()
+# threading.Thread(target=data.painel_para_bd).start()
+
+for i in range(20):
+    data.painel_para_bd()
+    time.sleep(0.1)
 
 
 def recarrega():
@@ -60,7 +64,7 @@ st.write("Buscar dados do painel")
 placeholder = st.empty()
 df = pd.DataFrame()
 with st.spinner("Carregando o sistema..."):
-    time.sleep(1.5)
+    # time.sleep(1.5)
     st.success("Sistema iniciado!")
 
 # Símbolo e mensagem de "Carregando..."
@@ -79,6 +83,7 @@ with st.spinner("Carregando o sistema..."):
 for seconds in range(50):  # 7200
     # TODO  pegar as linhas novas do banco e inserir no df
     df = recarrega()
+    data.painel_para_bd()
     # df = df.tail()
 
     # Apaga os elementos
@@ -105,14 +110,15 @@ for seconds in range(50):  # 7200
         # create two columns for charts
         fig_col1, fig_col2 = st.columns(2)
 
+        df_grafico = df.iloc[-20:, :].copy()
         with fig_col1:
             fig = px.line(
-                data_frame=df,
-                x=df.index,
-                y=df.columns[0],
+                data_frame=df_grafico,
+                x=df_grafico.index,
+                y=df_grafico.columns[0],
                 labels={
                     "index": "",
-                    df.columns[0]: "Valor",
+                    df_grafico.columns[0]: "Valor",
                     "clp": "CLPs",
                 },
                 title="Dados da Caldeira",
@@ -121,27 +127,27 @@ for seconds in range(50):  # 7200
 
         with fig_col2:
             fig2 = px.line(
-                data_frame=df,
-                x=df.index,
-                y=df.columns[1],
+                data_frame=df_grafico,
+                x=df_grafico.index,
+                y=df_grafico.columns[1],
                 labels={
                     "index": "",
-                    df.columns[1]: "Valor",
+                    df_grafico.columns[1]: "Valor",
                     "clp": "CLPs",
                 },
-                title="Dados de Balsas/MA   ",
+                title="Temperatura   ",
             )
             st.write(fig2)
 
         fig_col3, fig_col4 = st.columns(2)
         with fig_col3:
             fig = px.line(
-                data_frame=df,
-                y=df.columns[2],
+                data_frame=df_grafico,
+                y=df_grafico.columns[2],
                 color="clp",
                 labels={
                     "index": "",
-                    df.columns[2]: "Valor",
+                    df_grafico.columns[2]: "Valor",
                     "clp": "CLPs",
                 },
                 title="Região integrada 1",
@@ -150,19 +156,19 @@ for seconds in range(50):  # 7200
 
         with fig_col4:
             fig = px.line(
-                data_frame=df,
-                x=df.index,
-                y=df.columns[1],
+                data_frame=df_grafico,
+                x=df_grafico.index,
+                y=df_grafico.columns[1],
                 color="clp",
                 markers=True,
-                # text=df.index.time,
+                # text=df_grafico.index.time,
                 labels={
                     "index": "",
-                    df.columns[1]: "Valor",
+                    df_grafico.columns[1]: "Valor",
                     "clp": "CLPs",
                 },
                 title="Região integrada 2",
             )
             st.write(fig)
 
-        time.sleep(1.5)
+        time.sleep(0.5)
